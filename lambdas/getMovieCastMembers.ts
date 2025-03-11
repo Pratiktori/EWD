@@ -1,14 +1,17 @@
 import { Handler } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 
 const ddbDocClient = createDDbDocClient();
+const moviesTable = process.env.MOVIES_TABLE_NAME;
+const castsTable = process.env.CAST_TABLE_NAME;
 
 export const handler: Handler = async (event, context) => {
   try {
     console.log("Event: ", JSON.stringify(event));
     const queryString = event?.queryStringParameters;
     const movieId = queryString ? parseInt(queryString.movieId) : undefined;
+    const includeMovieDetails = queryString?.movie === 'true';
 
     if (!movieId) {
       return {
@@ -19,14 +22,19 @@ export const handler: Handler = async (event, context) => {
         body: JSON.stringify({ Message: "Missing movie Id" }),
       };
     }
-    const commandOutput = await ddbDocClient.send(
-      new GetCommand({
-        TableName: process.env.TABLE_NAME,
-        Key: { id: movieId },
-      })
-    );
-   // console.log('GetCommand response: ', commandOutput)
-    if (!commandOutput.Item) {
+
+    // Fetch cast members
+    const queryCommand = new QueryCommand({
+      TableName: castsTable,
+      KeyConditionExpression: "movieId = :movieId",
+      ExpressionAttributeValues: {
+        ":movieId": movieId,
+      },
+    });
+    const castResponse = await ddbDocClient.send(queryCommand);
+    const castMembers = castResponse.Items;
+
+    if (!castMembers) {
       return {
         statusCode: 404,
         headers: {
@@ -35,8 +43,27 @@ export const handler: Handler = async (event, context) => {
         body: JSON.stringify({ Message: "Invalid movie Id" }),
       };
     }
+
+    // Fetch movie details if requested
+    let movieDetails;
+    if (includeMovieDetails) {
+      const getCommand = new GetCommand({
+        TableName: moviesTable,
+        Key: { id: movieId },
+      });
+      const movieResponse = await ddbDocClient.send(getCommand);
+      if (movieResponse.Item) {
+        movieDetails = {
+          title: movieResponse.Item.title,
+          genreIds: movieResponse.Item.genre_ids,
+          overview: movieResponse.Item.overview,
+        };
+      }
+    }
+
     const body = {
-      data: commandOutput.Item,
+      castMembers,
+      movieDetails,
     };
 
     // Return Response

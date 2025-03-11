@@ -1,12 +1,19 @@
 *.js
 !jest.config.js
+<<<<<<< HEAD
+=======
+*.d.ts
+>>>>>>> 06f30869fa230fe728ac4451d1ecb7f46afbad50
 node_modules
 
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+<<<<<<< HEAD
 
 # Misc
 .DS_Store
 
 *.schema.json
+=======
+>>>>>>> 06f30869fa230fe728ac4451d1ecb7f46afbad50
