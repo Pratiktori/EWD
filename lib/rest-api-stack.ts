@@ -96,6 +96,17 @@ export class RestAPIStack extends cdk.Stack {
       },
     });
 
+    const getMovieFn = new lambda.Function(this, "GetMovieFn", {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "getMovie.handler",
+      code: lambda.Code.fromAsset("lambdas"),
+      environment: {
+        MOVIES_TABLE_NAME: moviesTable.tableName,
+        CAST_TABLE_NAME: movieCastsTable.tableName,
+        REGION: "us-east-1",
+      },
+    });
+    
     const deleteMovieFn = new lambdanode.NodejsFunction(this, "DeleteMovieFn", {
       architecture: lambda.Architecture.ARM_64,
       runtime: lambda.Runtime.NODEJS_22_X,
@@ -131,6 +142,9 @@ export class RestAPIStack extends cdk.Stack {
     moviesTable.grantReadWriteData(newMovieFn);
     moviesTable.grantReadWriteData(deleteMovieFn);
     movieCastsTable.grantReadData(getMovieCastMembersFn);
+
+    moviesTable.grantReadData(getMovieFn);
+    movieCastsTable.grantReadData(getMovieFn);
 
     const api = new apig.RestApi(this, "RestAPI", {
       description: "demo api",

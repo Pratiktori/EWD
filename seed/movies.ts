@@ -331,3 +331,4 @@ export const movieCasts: MovieCast[] = [
   { movieId: 1234, actorName: "Joe Cloggs", roleName: "Male Character 2", roleDescription: "description of character 3" },
   { movieId: 2345, actorName: "Joe Bloggs", roleName: "Male Character 1", roleDescription: "description of character 3" },
 ];
+
